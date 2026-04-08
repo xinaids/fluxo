@@ -1,10 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  body {
+  :root {
+    --font-sans: 'Inter', system-ui, sans-serif;
+  }
+
+  * {
     -webkit-tap-highlight-color: transparent;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background: #f9f9f8;
+    color: #111;
   }
 
   input[type='number']::-webkit-inner-spin-button,

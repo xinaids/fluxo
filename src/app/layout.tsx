@@ -2,6 +2,7 @@ import '@/lib/polyfills'
 import type { Metadata, Viewport } from 'next'
 import { SolanaProvider } from '@/components/SolanaProvider'
 import BottomNav from '@/components/ui/BottomNav'
+import { WalletModalOverride } from '@/components/ui/WalletModalOverride'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -21,11 +22,12 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR">
-      <body className="bg-white min-h-screen font-sans antialiased">
+      <body style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
         <SolanaProvider>
-          <main className="pb-20 max-w-md mx-auto min-h-screen">
+          <main className="pb-24 max-w-md mx-auto min-h-screen">
             {children}
           </main>
+          <WalletModalOverride />
           <BottomNav />
         </SolanaProvider>
       </body>

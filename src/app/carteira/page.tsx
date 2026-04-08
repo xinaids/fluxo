@@ -1,7 +1,7 @@
 'use client'
 
 import { useWallet, useConnection } from '@solana/wallet-adapter-react'
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+import { ClientWalletButton } from '@/components/ui/ClientWalletButton'
 import { useEffect, useState } from 'react'
 import { PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js'
 import { getAssociatedTokenAddress } from '@solana/spl-token'
@@ -115,7 +115,7 @@ export default function CarteiraPage() {
         <p className="text-gray-500 text-sm text-center">
           Conecte sua carteira Solana para ver seu saldo
         </p>
-        <WalletMultiButton />
+        <ClientWalletButton />
       </div>
     )
   }
