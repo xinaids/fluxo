@@ -2,11 +2,15 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
-  const visited = request.cookies.get('fluxo_onboarded')
-  const isOnboarding = request.nextUrl.pathname === '/onboarding'
-  const isRoot = request.nextUrl.pathname === '/'
+  const path = request.nextUrl.pathname
 
-  if (isRoot && !visited) {
+  if (path.startsWith('/@')) {
+    const username = path.slice(2)
+    return NextResponse.rewrite(new URL('/' + username, request.url))
+  }
+
+  const visited = request.cookies.get('fluxo_onboarded')
+  if (path === '/' && !visited) {
     return NextResponse.redirect(new URL('/onboarding', request.url))
   }
 
@@ -14,5 +18,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/onboarding'],
+  matcher: ['/', '/@:username*', '/onboarding'],
 }
