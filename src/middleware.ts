@@ -9,14 +9,13 @@ export function middleware(request: NextRequest) {
     return NextResponse.rewrite(new URL('/' + username, request.url))
   }
 
-  const visited = request.cookies.get('fluxo_onboarded')
-  if (path === '/' && !visited) {
-    return NextResponse.redirect(new URL('/onboarding', request.url))
+  if (path === '/') {
+    return NextResponse.redirect(new URL('/landing', request.url))
   }
 
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/', '/@:username*', '/onboarding'],
+  matcher: ['/', '/@:username*'],
 }

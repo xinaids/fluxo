@@ -21,11 +21,11 @@ type Status = 'loading' | 'ready' | 'waiting' | 'paying' | 'confirmed' | 'error'
 async function fetchUsdcRate(): Promise<number> {
   try {
     const res = await fetch(
-      '/api/rate',
+      'https://api.coingecko.com/api/v3/simple/price?ids=usd-coin&vs_currencies=brl',
       { cache: 'no-store' }
     )
     const data = await res.json()
-    return data.rate ?? 5.85
+    return data['usd-coin']?.brl ?? 5.85
   } catch {
     return 5.85
   }
@@ -143,12 +143,6 @@ export default function PayPage() {
       const payerAta    = await getAssociatedTokenAddress(USDC_MINT, payerPubkey)
       const recipientAta = await getAssociatedTokenAddress(USDC_MINT, recipient)
 
-
-      const recipientAtaInfo = await conn.getAccountInfo(recipientAta)
-      if (!recipientAtaInfo) {
-        const { createAssociatedTokenAccountInstruction } = await import("@solana/spl-token")
-        tx.add(createAssociatedTokenAccountInstruction(payerPubkey, recipientAta, recipient, USDC_MINT))
-      }
       const { blockhash } = await conn.getLatestBlockhash()
       const tx = new Transaction({ recentBlockhash: blockhash, feePayer: payerPubkey })
 
@@ -170,7 +164,7 @@ export default function PayPage() {
       setConfirmedSig(signature)
       setStatus('confirmed')
     } catch (e: any) {
-      console.error("FLUXO ERROR:", e?.message, "logs:", e?.logs, "full:", e)
+      console.error(e)
       setError(e?.message || 'Erro ao processar pagamento.')
       setStatus('ready')
     }

@@ -8,6 +8,7 @@ const USDC_MINT_DEVNET   = new PublicKey('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZ
 const USDC_MINT_MAINNET  = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v')
 
 export type PaymentStatus = 'idle' | 'pending' | 'confirmed' | 'error'
+export type PaymentToken  = 'USDC' | 'SOL'
 
 export interface FluxoOrder {
   id: string
@@ -17,44 +18,54 @@ export interface FluxoOrder {
   amountBrl: number
   label: string
   message: string
+  token: PaymentToken
   createdAt: number
 }
 
 export function useFluxoPayment() {
   const { connection } = useConnection()
   const [status, setStatus] = useState<PaymentStatus>('idle')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError]   = useState<string | null>(null)
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const createOrder = useCallback(({
     recipientAddress,
     amountBrl,
     usdcPerBrl,
-    label = 'Fluxo',
+    label   = 'Fluxo',
     message = '',
     network = 'devnet',
+    token   = 'USDC',
   }: {
     recipientAddress: string
     amountBrl: number
     usdcPerBrl: number
-    label?: string
+    label?:   string
     message?: string
     network?: 'mainnet' | 'devnet'
+    token?:   PaymentToken
   }): FluxoOrder => {
     const recipient  = new PublicKey(recipientAddress)
     const reference  = Keypair.generate().publicKey
-    const splToken   = network === 'mainnet' ? USDC_MINT_MAINNET : USDC_MINT_DEVNET
-    const amountUsdc = new BigNumber(amountBrl).dividedBy(usdcPerBrl).decimalPlaces(2)
+    const amountUsdc = new BigNumber(amountBrl)
+      .dividedBy(usdcPerBrl)
+      .decimalPlaces(token === 'SOL' ? 6 : 2)
 
-    const url = encodeURL({
+    const baseParams = {
       recipient,
       amount: amountUsdc,
-      splToken,
       reference,
       label,
       message: message || label,
-      memo: `fluxo:${Date.now()}`,
-    })
+      memo: 'fluxo:' + Date.now(),
+    }
+
+    const url = token === 'SOL'
+      ? encodeURL(baseParams)
+      : encodeURL({
+          ...baseParams,
+          splToken: network === 'mainnet' ? USDC_MINT_MAINNET : USDC_MINT_DEVNET,
+        })
 
     return {
       id: reference.toBase58().slice(0, 8),
@@ -64,6 +75,7 @@ export function useFluxoPayment() {
       amountBrl,
       label,
       message,
+      token,
       createdAt: Date.now(),
     }
   }, [])
@@ -83,28 +95,21 @@ export function useFluxoPayment() {
         setError('Tempo expirado. Gere um novo QR code.')
         return
       }
-
       try {
-        // Busca transações que referenciam a reference key
         const sigs = await connection.getSignaturesForAddress(
           order.reference,
           { limit: 1 },
           'confirmed'
         )
-
         if (sigs.length > 0) {
           clearInterval(pollingRef.current!)
           setStatus('confirmed')
           onConfirmed(sigs[0].signature)
         }
-      } catch (e) {
-        // Silently ignore — reference account doesn't exist yet
-      }
+      } catch {}
     }, 2000)
 
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current)
-    }
+    return () => { if (pollingRef.current) clearInterval(pollingRef.current) }
   }, [connection])
 
   return { createOrder, watchPayment, status, error }

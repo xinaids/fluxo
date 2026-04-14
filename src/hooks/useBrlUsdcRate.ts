@@ -25,7 +25,7 @@ export function useBrlUsdcRate(): PriceState {
     async function fetchRate() {
       try {
         const res = await fetch(
-          'https://api.coingecko.com/api/v3/simple/price?ids=usd-coin&vs_currencies=brl',
+          '/api/rate',
           { cache: 'no-store' }
         )
         if (!res.ok) throw new Error('bad response')
