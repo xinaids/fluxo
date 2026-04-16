@@ -144,25 +144,29 @@ export default function PayPage() {
       const recipientAta = await getAssociatedTokenAddress(USDC_MINT, recipient)
 
 
+      const { blockhash } = await conn.getLatestBlockhash()
+      const tx = new Transaction({ recentBlockhash: blockhash, feePayer: payerPubkey })
       const recipientAtaInfo = await conn.getAccountInfo(recipientAta)
       if (!recipientAtaInfo) {
         const { createAssociatedTokenAccountInstruction } = await import("@solana/spl-token")
         tx.add(createAssociatedTokenAccountInstruction(payerPubkey, recipientAta, recipient, USDC_MINT))
       }
-      const { blockhash } = await conn.getLatestBlockhash()
-      const tx = new Transaction({ recentBlockhash: blockhash, feePayer: payerPubkey })
 
-      tx.add(
-        createTransferCheckedInstruction(
-          payerAta,
-          USDC_MINT,
-          recipientAta,
-          payerPubkey,
-          BigInt(Math.round(amount.toNumber() * 1_000_000)),
-          6,
-          [reference]
-        )
+      // ✅ Correto: reference como AccountMeta, não signer
+      const transferIx = createTransferCheckedInstruction(
+        payerAta,
+        USDC_MINT,
+        recipientAta,
+        payerPubkey,
+        BigInt(Math.round(amount.toNumber() * 1_000_000)),
+        6
       )
+      transferIx.keys.push({
+        pubkey: reference,
+        isSigner: false,
+        isWritable: false,
+      })
+      tx.add(transferIx)
 
       const { signature } = await phantom.signAndSendTransaction(tx)
       await conn.confirmTransaction(signature, 'confirmed')
@@ -171,6 +175,10 @@ export default function PayPage() {
       setStatus('confirmed')
     } catch (e: any) {
       console.error("FLUXO ERROR:", e?.message, "logs:", e?.logs, "full:", e)
+      if (e?.message?.includes('0x1')) console.error("Saldo insuficiente")
+      if (e?.message?.includes('0x4')) console.error("Token account nao encontrada")
+      const errStr = JSON.stringify(e, Object.getOwnPropertyNames(e))
+      console.error("FLUXO ERROR FULL:", errStr)
       setError(e?.message || 'Erro ao processar pagamento.')
       setStatus('ready')
     }
