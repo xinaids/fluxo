@@ -174,15 +174,12 @@ export default function PayPage() {
         BigInt(Math.round(amount.toNumber() * 1_000_000)),
         6
       )
-      // Só adiciona reference se foi gerada localmente (não veio da URL)
-      const refParam = new URLSearchParams(window.location.search).get('ref')
-      if (!refParam) {
-        transferIx.keys.push({
-          pubkey: reference,
-          isSigner: false,
-          isWritable: false,
-        })
-      }
+      // Sempre inclui reference para permitir detecção pelo cobrador
+      transferIx.keys.push({
+        pubkey: reference,
+        isSigner: false,
+        isWritable: false,
+      })
       tx.add(transferIx)
 
       const { signature } = await phantom.signAndSendTransaction(tx)
@@ -196,7 +193,7 @@ export default function PayPage() {
         type: 'send',
         amountUsdc: amountUsdcRef.current!.toNumber(),
         amountBrl: amountUsdcRef.current!.toNumber() * rate,
-        label: label || 'Pagamento via Fluxo',
+        label: label || 'Pagamento enviado',
         counterparty: recipientRef.current!.toBase58(),
         signature,
         timestamp: Date.now(),

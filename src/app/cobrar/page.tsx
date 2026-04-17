@@ -56,7 +56,7 @@ export default function CobrarPage() {
     const newOrder = createOrder({
       recipientAddress: publicKey.toBase58(),
       amountBrl: brlValue,
-      usdcPerBrl: token === 'USDC' ? 1 / brlPerUsdc : 1 / (rate ?? solPrice),
+      usdcPerBrl: token === 'USDC' ? brlPerUsdc : (rate ?? solPrice),
       label: 'Fluxo',
       message: description || 'Cobranca Fluxo',
       network: 'devnet',
@@ -70,11 +70,12 @@ export default function CobrarPage() {
       addTx({
         id: newOrder.id,
         type: 'receive',
-        amountUsdc: parseFloat(newOrder.amountUsdc.toFixed(token === 'USDC' ? 2 : 4)),
+        amountUsdc: parseFloat(newOrder.amountUsdc.toFixed(token === 'USDC' ? 2 : 6)),
         amountBrl: brlValue,
         label: description || 'Cobranca',
         signature: sig,
         timestamp: Date.now(),
+        token,
       })
       setConfirmedSig(sig)
       setStage('confirmed')

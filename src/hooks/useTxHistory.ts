@@ -9,6 +9,7 @@ export interface TxRecord {
   counterparty?: string
   signature: string
   timestamp: number
+  token?: 'USDC' | 'SOL'
 }
 
 const STORAGE_KEY = 'fluxo_txs'
@@ -33,9 +34,27 @@ export function useTxHistory() {
     })
   }, [])
 
-  const totalReceived = txs
-    .filter(t => t.type === 'receive')
+  const totalReceivedUsdc = txs
+    .filter(t => t.type === 'receive' && t.token !== 'SOL')
     .reduce((s, t) => s + t.amountUsdc, 0)
+  const totalReceivedSol = txs
+    .filter(t => t.type === 'receive' && t.token === 'SOL')
+    .reduce((s, t) => s + t.amountUsdc, 0)
+  const totalReceivedBrl = txs
+    .filter(t => t.type === 'receive')
+    .reduce((s, t) => s + t.amountBrl, 0)
+  const totalSentUsdc = txs
+    .filter(t => t.type === 'send' && t.token !== 'SOL')
+    .reduce((s, t) => s + t.amountUsdc, 0)
+  const totalSentSol = txs
+    .filter(t => t.type === 'send' && t.token === 'SOL')
+    .reduce((s, t) => s + t.amountUsdc, 0)
+  const totalSentBrl = txs
+    .filter(t => t.type === 'send')
+    .reduce((s, t) => s + t.amountBrl, 0)
+  // Compat
+  const totalReceived = totalReceivedUsdc
+  const totalSent = totalSentUsdc
 
   // Group by date label
   const grouped = txs.reduce<Record<string, TxRecord[]>>((acc, tx) => {
@@ -54,5 +73,5 @@ export function useTxHistory() {
     return acc
   }, {})
 
-  return { txs, grouped, addTx, totalReceived }
+  return { txs, grouped, addTx, totalReceived, totalSent, totalReceivedUsdc, totalReceivedSol, totalReceivedBrl, totalSentUsdc, totalSentSol, totalSentBrl }
 }

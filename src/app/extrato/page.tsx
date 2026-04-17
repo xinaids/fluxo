@@ -26,7 +26,7 @@ function TxItem({ tx }: { tx: TxRecord }) {
       </div>
       <div className="text-right">
         <p className={`text-sm font-medium ${isReceive ? 'text-green-600' : 'text-red-500'}`}>
-          {isReceive ? '+' : '-'}{tx.amountUsdc.toFixed(2)} USDC
+          {isReceive ? '+' : '-'}{tx.token === 'SOL' ? tx.amountUsdc.toFixed(4) + ' SOL' : tx.amountUsdc.toFixed(2) + ' USDC'}
         </p>
         <p className="text-xs text-gray-400">{formatBrl(tx.amountBrl)}</p>
       </div>
@@ -35,20 +35,36 @@ function TxItem({ tx }: { tx: TxRecord }) {
 }
 
 export default function ExtratoPaage() {
-  const { grouped, totalReceived } = useTxHistory()
+  const { grouped, totalReceivedBrl, totalReceivedUsdc, totalReceivedSol, totalSentBrl, totalSentUsdc, totalSentSol } = useTxHistory()
   const groups = Object.entries(grouped)
 
   return (
     <div className="px-4 pt-6 max-w-sm mx-auto">
-      <div className="bg-gray-50 rounded-2xl p-4 mb-6 flex justify-between items-center">
-        <div>
-          <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">
-            Total recebido
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="bg-green-50 rounded-2xl p-4">
+          <p className="text-xs text-green-600 uppercase tracking-widest mb-1">
+            Recebido
           </p>
-          <p className="text-2xl font-semibold">${totalReceived.toFixed(2)}</p>
-          <p className="text-xs text-gray-400 mt-0.5">USDC · Solana</p>
+          <p className="text-xl font-semibold text-green-700">{formatBrl(totalReceivedBrl)}</p>
+          <p className="text-xs text-green-500 mt-0.5">
+            {totalReceivedUsdc > 0 && <span>{totalReceivedUsdc.toFixed(2)} USDC</span>}
+            {totalReceivedUsdc > 0 && totalReceivedSol > 0 && <span> · </span>}
+            {totalReceivedSol > 0 && <span>{totalReceivedSol.toFixed(4)} SOL</span>}
+            {totalReceivedUsdc === 0 && totalReceivedSol === 0 && <span>—</span>}
+          </p>
         </div>
-        <div className="text-3xl opacity-20">◎</div>
+        <div className="bg-red-50 rounded-2xl p-4">
+          <p className="text-xs text-red-500 uppercase tracking-widest mb-1">
+            Enviado
+          </p>
+          <p className="text-xl font-semibold text-red-600">{formatBrl(totalSentBrl)}</p>
+          <p className="text-xs text-red-400 mt-0.5">
+            {totalSentUsdc > 0 && <span>{totalSentUsdc.toFixed(2)} USDC</span>}
+            {totalSentUsdc > 0 && totalSentSol > 0 && <span> · </span>}
+            {totalSentSol > 0 && <span>{totalSentSol.toFixed(4)} SOL</span>}
+            {totalSentUsdc === 0 && totalSentSol === 0 && <span>—</span>}
+          </p>
+        </div>
       </div>
 
       {groups.length === 0 && (

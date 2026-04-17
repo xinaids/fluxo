@@ -64,6 +64,7 @@ export default function CarteiraPage() {
   const { connection } = useConnection()
   const [balances, setBalances] = useState<Balances>({ sol: 0, usdc: 0 })
   const [loading, setLoading] = useState(false)
+  const [solPrice, setSolPrice] = useState(170)
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
@@ -73,6 +74,12 @@ export default function CarteiraPage() {
     async function fetchBalances() {
       setLoading(true)
       try {
+        // Busca preço do SOL
+        try {
+          const priceRes = await fetch('/api/rate')
+          const priceData = await priceRes.json()
+          if (priceData.solPrice) setSolPrice(priceData.solPrice)
+        } catch {}
         const solLamports = await connection.getBalance(publicKey!)
         const sol = solLamports / LAMPORTS_PER_SOL
 
@@ -120,7 +127,7 @@ export default function CarteiraPage() {
     )
   }
 
-  const totalUsd = balances.usdc + balances.sol * 170 // rough SOL price fallback
+  const totalUsd = balances.usdc + balances.sol * solPrice // rough SOL price fallback
 
   return (
     <div className="px-4 pt-6 max-w-sm mx-auto">
@@ -132,7 +139,7 @@ export default function CarteiraPage() {
           <div className="h-10 w-32 bg-gray-100 rounded-lg animate-pulse mx-auto" />
         ) : (
           <p className="text-4xl font-semibold">
-            ${(balances.usdc + balances.sol * 170).toFixed(2)}
+            ${(balances.usdc + balances.sol * solPrice).toFixed(2)}
           </p>
         )}
         <p className="text-xs text-gray-400 mt-1">USD estimado</p>

@@ -84,26 +84,35 @@ export function useFluxoPayment() {
     const deadline = Date.now() + 10 * 60 * 1000
     const recipient = recipientAddress ? new PublicKey(recipientAddress) : null
 
-    // Captura a signature mais recente ANTES de começar o polling
-    // Para USDC, busca na ATA (Associated Token Account) do destinatário
+    // Captura signatures ANTES do polling — ATA (USDC) + wallet (SOL)
     const initLastSig = async () => {
       if (recipient) {
         try {
+          // ATA para USDC
           const ata = await getAssociatedTokenAddress(USDC_MINT_DEVNET, recipient)
           ;(lastSigRef as any).ata = ata
           console.log('[Fluxo] ATA do recipient:', ata.toBase58().slice(0, 12))
-          const initial = await connection.getSignaturesForAddress(
+          const ataInitial = await connection.getSignaturesForAddress(
             ata, { limit: 5 }, 'confirmed'
           )
-          const existingSigs = new Set(initial.map(s => s.signature))
-          lastSigRef.current = initial.length > 0 ? initial[0].signature : null
-          console.log('[Fluxo] baseline sig:', lastSigRef.current?.slice(0, 20) ?? 'nenhuma')
-          console.log('[Fluxo] existing sigs count:', existingSigs.size)
-          ;(lastSigRef as any).existingSet = existingSigs
+          const ataExisting = new Set(ataInitial.map(s => s.signature))
+          ;(lastSigRef as any).ataExistingSet = ataExisting
+          console.log('[Fluxo] ATA baseline count:', ataExisting.size)
+
+          // Wallet principal para SOL
+          const walletInitial = await connection.getSignaturesForAddress(
+            recipient, { limit: 5 }, 'confirmed'
+          )
+          const walletExisting = new Set(walletInitial.map(s => s.signature))
+          ;(lastSigRef as any).walletExistingSet = walletExisting
+          console.log('[Fluxo] Wallet baseline count:', walletExisting.size)
+
+          lastSigRef.current = ataInitial.length > 0 ? ataInitial[0].signature : null
         } catch (e) {
           console.warn('[Fluxo] initLastSig error:', e)
           lastSigRef.current = null
-          ;(lastSigRef as any).existingSet = new Set()
+          ;(lastSigRef as any).ataExistingSet = new Set()
+          ;(lastSigRef as any).walletExistingSet = new Set()
         }
       }
     }
@@ -128,22 +137,33 @@ export function useFluxoPayment() {
             onConfirmed(sigs[0].signature)
             return
           }
-          // Fallback: detecta transação nova na ATA (token account)
+          // Fallback: detecta tx nova na ATA (USDC) ou wallet (SOL)
           if (recipient) {
+            // Checa ATA (USDC)
             const ata = (lastSigRef as any).ata as PublicKey
+            const ataSet = (lastSigRef as any).ataExistingSet as Set<string> || new Set()
             if (ata) {
-              const recipientSigs = await connection.getSignaturesForAddress(
-                ata, { limit: 5 }, 'confirmed'
-              )
-              const existingSet = (lastSigRef as any).existingSet as Set<string> || new Set()
-              const newTx = recipientSigs.find(s => !existingSet.has(s.signature))
-              console.log('[Fluxo] polling ATA sigs:', recipientSigs.length, 'baseline:', existingSet.size, 'new?', !!newTx)
-              if (newTx) {
-                console.log('[Fluxo] NOVA tx detectada via ATA:', newTx.signature.slice(0, 20))
+              const ataSigs = await connection.getSignaturesForAddress(ata, { limit: 5 }, 'confirmed')
+              const newAtaTx = ataSigs.find(s => !ataSet.has(s.signature))
+              console.log('[Fluxo] ATA sigs:', ataSigs.length, 'baseline:', ataSet.size, 'new?', !!newAtaTx)
+              if (newAtaTx) {
+                console.log('[Fluxo] NOVA tx via ATA (USDC):', newAtaTx.signature.slice(0, 20))
                 clearInterval(pollingRef.current!)
                 setStatus('confirmed')
-                onConfirmed(newTx.signature)
+                onConfirmed(newAtaTx.signature)
+                return
               }
+            }
+            // Checa wallet principal (SOL)
+            const walletSet = (lastSigRef as any).walletExistingSet as Set<string> || new Set()
+            const walletSigs = await connection.getSignaturesForAddress(recipient, { limit: 5 }, 'confirmed')
+            const newWalletTx = walletSigs.find(s => !walletSet.has(s.signature))
+            console.log('[Fluxo] Wallet sigs:', walletSigs.length, 'baseline:', walletSet.size, 'new?', !!newWalletTx)
+            if (newWalletTx) {
+              console.log('[Fluxo] NOVA tx via Wallet (SOL):', newWalletTx.signature.slice(0, 20))
+              clearInterval(pollingRef.current!)
+              setStatus('confirmed')
+              onConfirmed(newWalletTx.signature)
             }
           }
         } catch (e) {
