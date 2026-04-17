@@ -30,7 +30,7 @@ export function useBrlUsdcRate(): PriceState {
         )
         if (!res.ok) throw new Error('bad response')
         const data = await res.json()
-        const brlPerUsdc: number = data['usd-coin']?.brl ?? FALLBACK_BRL_PER_USDC
+        const brlPerUsdc: number = data?.rate ?? data['usd-coin']?.brl ?? FALLBACK_BRL_PER_USDC
         if (!cancelled) {
           setState({
             brlPerUsdc,

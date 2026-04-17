@@ -78,7 +78,7 @@ export default function CobrarPage() {
       })
       setConfirmedSig(sig)
       setStage('confirmed')
-    })
+    }, publicKey.toBase58())
     cleanupRef.current = cleanup
   }
 
@@ -96,6 +96,7 @@ export default function CobrarPage() {
     const base = window.location.origin
     const url = base + "/pay?to=" + publicKey.toBase58() +
       "&amount=" + brlValue +
+      "&ref=" + order.reference.toBase58() +
       (description ? "&label=" + encodeURIComponent(description) : "")
     try {
       await navigator.clipboard.writeText(url)

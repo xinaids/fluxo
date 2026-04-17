@@ -7,6 +7,7 @@ import { createTransferCheckedInstruction, getAssociatedTokenAddress, getOrCreat
 import { encodeURL } from '@solana/pay'
 import BigNumber from 'bignumber.js'
 import { QRCodeSVG } from 'qrcode.react'
+import { useTxHistory } from '@/hooks/useTxHistory'
 
 const USDC_MINT_DEVNET  = new PublicKey('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU')
 const USDC_MINT_MAINNET = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v')
@@ -42,6 +43,7 @@ export default function PayPage() {
   const [recipientShort, setRecipientShort] = useState('')
   const [confirmedSig, setConfirmedSig]     = useState('')
   const [phantomInstalled, setPhantomInstalled] = useState(false)
+  const { addTx } = useTxHistory()
   const referenceRef  = useRef<PublicKey | null>(null)
   const recipientRef  = useRef<PublicKey | null>(null)
   const amountUsdcRef = useRef<BigNumber | null>(null)
@@ -69,7 +71,8 @@ export default function PayPage() {
       }
 
       const num = parseFloat(amount)
-      const reference = Keypair.generate().publicKey
+      const refParam = params.get('ref')
+      const reference = refParam ? new PublicKey(refParam) : Keypair.generate().publicKey
       referenceRef.current  = reference
       recipientRef.current  = recipient
 
@@ -122,6 +125,16 @@ export default function PayPage() {
           clearInterval(pollingRef.current!)
           setConfirmedSig(sigs[0].signature)
           setStatus('confirmed')
+          const rate = await fetchUsdcRate()
+          addTx({
+            id: sigs[0].signature,
+            type: 'receive',
+            amountUsdc: amountUsdcRef.current!.toNumber(),
+            amountBrl: amountUsdcRef.current!.toNumber() * rate,
+            label: label || 'Pagamento recebido',
+            signature: sigs[0].signature,
+            timestamp: Date.now(),
+          })
         }
       } catch {}
     }, 2000)
@@ -142,8 +155,9 @@ export default function PayPage() {
 
       const payerAta    = await getAssociatedTokenAddress(USDC_MINT, payerPubkey)
       const recipientAta = await getAssociatedTokenAddress(USDC_MINT, recipient)
-
-
+      const payerAtaInfo = await conn.getAccountInfo(payerAta)
+      console.log('[Fluxo] payerAta exists:', !!payerAtaInfo)
+      console.log('[Fluxo] reference:', reference.toBase58())
       const { blockhash } = await conn.getLatestBlockhash()
       const tx = new Transaction({ recentBlockhash: blockhash, feePayer: payerPubkey })
       const recipientAtaInfo = await conn.getAccountInfo(recipientAta)
@@ -152,7 +166,6 @@ export default function PayPage() {
         tx.add(createAssociatedTokenAccountInstruction(payerPubkey, recipientAta, recipient, USDC_MINT))
       }
 
-      // ✅ Correto: reference como AccountMeta, não signer
       const transferIx = createTransferCheckedInstruction(
         payerAta,
         USDC_MINT,
@@ -161,11 +174,15 @@ export default function PayPage() {
         BigInt(Math.round(amount.toNumber() * 1_000_000)),
         6
       )
-      transferIx.keys.push({
-        pubkey: reference,
-        isSigner: false,
-        isWritable: false,
-      })
+      // Só adiciona reference se foi gerada localmente (não veio da URL)
+      const refParam = new URLSearchParams(window.location.search).get('ref')
+      if (!refParam) {
+        transferIx.keys.push({
+          pubkey: reference,
+          isSigner: false,
+          isWritable: false,
+        })
+      }
       tx.add(transferIx)
 
       const { signature } = await phantom.signAndSendTransaction(tx)
@@ -173,6 +190,17 @@ export default function PayPage() {
 
       setConfirmedSig(signature)
       setStatus('confirmed')
+      const rate = await fetchUsdcRate()
+      addTx({
+        id: signature,
+        type: 'send',
+        amountUsdc: amountUsdcRef.current!.toNumber(),
+        amountBrl: amountUsdcRef.current!.toNumber() * rate,
+        label: label || 'Pagamento via Fluxo',
+        counterparty: recipientRef.current!.toBase58(),
+        signature,
+        timestamp: Date.now(),
+      })
     } catch (e: any) {
       console.error("FLUXO ERROR:", e?.message, "logs:", e?.logs, "full:", e)
       if (e?.message?.includes('0x1')) console.error("Saldo insuficiente")
