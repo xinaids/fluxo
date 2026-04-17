@@ -4,9 +4,8 @@
   "description": "Receba pagamentos em crypto. Sem banco. Sem fronteiras.",
   "start_url": "/cobrar",
   "display": "standalone",
-  "orientation": "portrait",
   "background_color": "#ffffff",
-  "theme_color": "#000000",
+  "theme_color": "#2D8B72",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -20,7 +19,5 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ],
-  "categories": ["finance", "utilities"],
-  "lang": "pt-BR"
+  ]
 }
