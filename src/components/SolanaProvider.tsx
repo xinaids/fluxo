@@ -15,7 +15,7 @@ require('@solana/wallet-adapter-react-ui/styles.css')
 
 export const SolanaProvider: FC<{ children: ReactNode }> = ({ children }) => {
   return (
-    // @ts-expect-error React 18 type mismatch with wallet adapter
+    // @ts-ignore
     <ConnectionProvider endpoint={ENDPOINT}>
       <WalletProvider wallets={[]} autoConnect>
         <WalletModalProvider>{children}</WalletModalProvider>
