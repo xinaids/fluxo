@@ -3,32 +3,28 @@
 import { useWallet, useConnection } from '@solana/wallet-adapter-react'
 import { ClientWalletButton } from '@/components/ui/ClientWalletButton'
 import { useEffect, useState } from 'react'
-import { PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js'
+import { LAMPORTS_PER_SOL } from '@solana/web3.js'
 import { getAssociatedTokenAddress } from '@solana/spl-token'
-
-const USDC_MINT_DEVNET   = new PublicKey('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU')
-const USDC_MINT_MAINNET  = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v')
-const IS_MAINNET = process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet'
-const USDC_MINT  = IS_MAINNET ? USDC_MINT_MAINNET : USDC_MINT_DEVNET
+import { USDC_MINT, IS_MAINNET, BALANCE_REFRESH_MS, explorerAddressUrl } from '@/hooks/constants'
+import { useLanguage } from '@/i18n/LanguageContext'
+import { useBrlUsdcRate, shortenAddress } from '@/hooks/useBrlUsdcRate'
 
 interface Balances {
   sol: number
   usdc: number
 }
 
-function shortenAddress(addr: string) {
-  return addr.slice(0, 4) + '...' + addr.slice(-4)
-}
-
 function TokenRow({
   symbol,
   name,
   balance,
+  usdValue,
   isDefault,
 }: {
   symbol: string
   name: string
   balance: number
+  usdValue?: number
   isDefault?: boolean
 }) {
   return (
@@ -51,9 +47,13 @@ function TokenRow({
       </div>
       <div className="text-right">
         <p className="text-sm font-medium text-gray-900">
-          {balance.toLocaleString('en-US', { maximumFractionDigits: 4 })}
+          {balance.toLocaleString('en-US', { maximumFractionDigits: symbol === 'SOL' ? 4 : 2 })}
         </p>
-        <p className="text-xs text-gray-400">{symbol}</p>
+        {usdValue !== undefined && (
+          <p className="text-xs text-gray-400">
+            ≈ ${usdValue.toFixed(2)}
+          </p>
+        )}
       </div>
     </div>
   )
@@ -62,9 +62,10 @@ function TokenRow({
 export default function CarteiraPage() {
   const { publicKey, disconnect } = useWallet()
   const { connection } = useConnection()
+  const { solPriceUsd } = useBrlUsdcRate()
+  const { t } = useLanguage()
   const [balances, setBalances] = useState<Balances>({ sol: 0, usdc: 0 })
   const [loading, setLoading] = useState(false)
-  const [solPrice, setSolPrice] = useState(170)
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
@@ -74,12 +75,6 @@ export default function CarteiraPage() {
     async function fetchBalances() {
       setLoading(true)
       try {
-        // Busca preço do SOL
-        try {
-          const priceRes = await fetch('/api/rate')
-          const priceData = await priceRes.json()
-          if (priceData.solPrice) setSolPrice(priceData.solPrice)
-        } catch {}
         const solLamports = await connection.getBalance(publicKey!)
         const sol = solLamports / LAMPORTS_PER_SOL
 
@@ -101,7 +96,7 @@ export default function CarteiraPage() {
     }
 
     fetchBalances()
-    const id = setInterval(fetchBalances, 15_000)
+    const id = setInterval(fetchBalances, BALANCE_REFRESH_MS)
     return () => {
       cancelled = true
       clearInterval(id)
@@ -120,85 +115,94 @@ export default function CarteiraPage() {
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4">
         <div className="text-4xl opacity-20">◎</div>
         <p className="text-gray-500 text-sm text-center">
-          Conecte sua carteira Solana para ver seu saldo
+          {t.carteira_connect_desc}
         </p>
         <ClientWalletButton />
       </div>
     )
   }
 
-  const totalUsd = balances.usdc + balances.sol * solPrice // rough SOL price fallback
+  const totalUsd = balances.usdc + balances.sol * solPriceUsd
 
   return (
     <div className="px-4 pt-6 max-w-sm mx-auto">
-
       {/* Balance header */}
       <div className="text-center mb-6">
-        <p className="text-xs text-gray-400 uppercase tracking-widest mb-2">Saldo total</p>
+        <p className="text-xs text-gray-400 uppercase tracking-widest mb-2">{t.carteira_total}</p>
         {loading ? (
           <div className="h-10 w-32 bg-gray-100 rounded-lg animate-pulse mx-auto" />
         ) : (
-          <p className="text-4xl font-semibold">
-            ${(balances.usdc + balances.sol * solPrice).toFixed(2)}
-          </p>
+          <p className="text-4xl font-semibold">${totalUsd.toFixed(2)}</p>
         )}
-        <p className="text-xs text-gray-400 mt-1">USD estimado</p>
+        <p className="text-xs text-gray-400 mt-1">{t.carteira_usd}</p>
       </div>
 
       {/* Address card */}
       <div className="bg-gray-50 rounded-2xl p-4 mb-5">
-        <p className="text-xs text-gray-400 mb-1">Endereço de recebimento</p>
+        <div className="flex items-center justify-between mb-1">
+          <p className="text-xs text-gray-400">{t.carteira_address}</p>
+          <a
+            href={explorerAddressUrl(publicKey.toBase58())}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10px] text-blue-500 hover:underline"
+          >
+            Explorer ↗
+          </a>
+        </div>
         <p className="text-sm font-mono text-gray-700 break-all leading-relaxed">
           {publicKey.toBase58()}
         </p>
         <button
           onClick={handleCopy}
-          className="mt-3 w-full py-2 border border-gray-200 rounded-xl text-sm text-gray-600 bg-white"
+          className="mt-3 w-full py-2 border border-gray-200 rounded-xl text-sm text-gray-600 bg-white active:scale-[0.98] transition-transform"
         >
-          {copied ? '✓ Copiado!' : 'Copiar endereço'}
+          {copied ? t.carteira_copied : t.carteira_copy}
         </button>
       </div>
 
       {/* Token list */}
       <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-2">
-        Seus tokens
+        {t.carteira_tokens}
       </p>
       <div className="bg-white rounded-2xl border border-gray-100 px-4 mb-5">
         <TokenRow
           symbol="USDC"
           name="USD Coin · Solana"
           balance={balances.usdc}
+          usdValue={balances.usdc}
           isDefault
         />
         <TokenRow
           symbol="SOL"
           name="Solana nativo"
           balance={balances.sol}
+          usdValue={balances.sol * solPriceUsd}
         />
       </div>
 
       {/* Network badge */}
       <div className="flex items-center justify-between mb-5">
         <span className="text-xs text-gray-400">Rede</span>
-        <span className={`text-xs px-2 py-1 rounded-full font-medium
-          ${IS_MAINNET
-            ? 'bg-green-50 text-green-600'
-            : 'bg-yellow-50 text-yellow-600'}`}
+        <span
+          className={`text-xs px-2 py-1 rounded-full font-medium ${
+            IS_MAINNET ? 'bg-green-50 text-green-600' : 'bg-yellow-50 text-yellow-600'
+          }`}
         >
-          {IS_MAINNET ? 'Mainnet' : 'Devnet (teste)'}
+          {IS_MAINNET ? t.carteira_mainnet : t.carteira_devnet}
         </span>
       </div>
 
       {/* Disconnect */}
       <button
         onClick={disconnect}
-        className="w-full py-3 border border-gray-200 rounded-xl text-sm text-gray-400"
+        className="w-full py-3 border border-gray-200 rounded-xl text-sm text-gray-400 active:scale-[0.98] transition-transform"
       >
-        Desconectar carteira
+        {t.carteira_disconnect}
       </button>
 
       <p className="text-xs text-center text-gray-300 mt-6 pb-4">
-        {shortenAddress(publicKey.toBase58())} · Fluxo v0.1
+        {shortenAddress(publicKey.toBase58())} · Fluxo v0.2
       </p>
     </div>
   )

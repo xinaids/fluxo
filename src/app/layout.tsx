@@ -1,8 +1,10 @@
 import '@/lib/polyfills'
 import type { Metadata, Viewport } from 'next'
 import { SolanaProvider } from '@/components/SolanaProvider'
+import { AppHeader } from '@/components/ui/AppHeader'
 import BottomNav from '@/components/ui/BottomNav'
 import { WalletModalOverride } from '@/components/ui/WalletModalOverride'
+import { LanguageProvider } from '@/i18n/LanguageContext'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -30,13 +32,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-BR">
       <body style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
-        <SolanaProvider>
+        <LanguageProvider>
+          <SolanaProvider>
+          <AppHeader />
           <main className="pb-24 max-w-md mx-auto min-h-screen">
             {children}
           </main>
           <WalletModalOverride />
           <BottomNav />
         </SolanaProvider>
+          </LanguageProvider>
       </body>
     </html>
   )

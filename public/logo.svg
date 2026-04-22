@@ -1,0 +1,13 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fundo branco -->
+  <rect x="8" y="8" width="240" height="240" rx="48" fill="#ffffff"/>
+
+  <!-- Linha vertical -->
+  <line x1="96" y1="48" x2="96" y2="208" stroke="#0F5C4D" stroke-width="10" stroke-linecap="round"/>
+
+  <!-- Curva superior -->
+  <path d="M96 88 Q150 70 180 88" fill="none" stroke="#2FA37C" stroke-width="10" stroke-linecap="round"/>
+
+  <!-- Curva inferior -->
+  <path d="M96 140 Q150 122 180 140" fill="none" stroke="#2FA37C" stroke-width="10" stroke-linecap="round"/>
+</svg>
