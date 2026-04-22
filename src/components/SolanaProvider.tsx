@@ -15,9 +15,7 @@ export const SolanaProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const wallets = useMemo(() => [], [])
 
   return (
-    // @ts-expect-error -- wallet-adapter types mismatch with React 19
     <ConnectionProvider endpoint={ENDPOINT}>
-      {/* @ts-expect-error -- wallet-adapter types mismatch with React 19 */}
       <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>{children}</WalletModalProvider>
       </WalletProvider>
