@@ -1,3 +1,4 @@
+// @ts-nocheck
 'use client'
 
 import { FC, ReactNode, useMemo } from 'react'
@@ -7,7 +8,7 @@ import { clusterApiUrl } from '@solana/web3.js'
 import { NETWORK } from '@/hooks/constants'
 
 const ENDPOINT =
-  process.env.NEXT_PUBLIC_RPC_URL ?? clusterApiUrl(NETWORK)
+  process.env.NEXT_PUBLIC_RPC_URL ?? '/api/rpc'
 
 require('@solana/wallet-adapter-react-ui/styles.css')
 

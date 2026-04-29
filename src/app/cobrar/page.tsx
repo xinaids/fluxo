@@ -271,7 +271,7 @@ export default function CobrarPage() {
             onClick={handleShare}
             className="flex-1 py-3 bg-black text-white rounded-2xl text-sm font-medium"
           >
-            {copied ? '{t.cobrar_copied}' : '{t.cobrar_share}'}
+            {copied ? t.cobrar_copied : t.cobrar_share}
           </button>
           <button
             onClick={handleReset}

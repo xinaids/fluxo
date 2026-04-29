@@ -11,9 +11,7 @@ import { FluxoLogo } from '@/components/ui/FluxoLogo'
 import { useTxHistory } from '@/hooks/useTxHistory'
 import { USDC_MINT, IS_MAINNET, explorerUrl } from '@/hooks/constants'
 
-const RPC = process.env.NEXT_PUBLIC_RPC_URL || (IS_MAINNET
-  ? 'https://api.mainnet-beta.solana.com'
-  : 'https://api.devnet.solana.com')
+const RPC = '/api/rpc'
 
 type Status = 'loading' | 'ready' | 'waiting' | 'paying' | 'confirmed' | 'error'
 

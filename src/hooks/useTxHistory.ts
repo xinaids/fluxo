@@ -188,7 +188,7 @@ export function useTxHistory(walletAddress?: string) {
     if (!walletAddress || fetchedRef.current) return
     fetchedRef.current = true
 
-    const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'https://api.devnet.solana.com'
+    const rpcUrl = '/api/rpc'
 
     setChainLoading(true)
     fetchOnChainHistory(walletAddress, rpcUrl, 30)
