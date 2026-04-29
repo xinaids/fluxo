@@ -10,7 +10,7 @@ import { NETWORK } from '@/hooks/constants'
 const ENDPOINT =
   process.env.NEXT_PUBLIC_RPC_URL ?? '/api/rpc'
 
-require('@solana/wallet-adapter-react-ui/styles.css')
+import '@solana/wallet-adapter-react-ui/styles.css'
 
 export const SolanaProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const wallets = useMemo(() => [], [])
