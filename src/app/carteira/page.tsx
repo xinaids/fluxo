@@ -89,7 +89,7 @@ export default function CarteiraPage() {
 
         if (!cancelled) setBalances({ sol, usdc })
       } catch (e) {
-        console.error('[Fluxo] balance fetch error:', e)
+        // error handled silently
       } finally {
         if (!cancelled) setLoading(false)
       }

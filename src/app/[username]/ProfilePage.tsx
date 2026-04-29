@@ -24,11 +24,11 @@ const IS_MAINNET   = process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet'
 async function fetchRate(): Promise<number> {
   try {
     const res = await fetch(
-      'https://api.coingecko.com/api/v3/simple/price?ids=usd-coin&vs_currencies=brl',
+      '/api/rate',
       { cache: 'no-store' }
     )
     const data = await res.json()
-    return data['usd-coin']?.brl ?? 5.85
+    return data.rate ?? 5.85
   } catch {
     return 5.85
   }

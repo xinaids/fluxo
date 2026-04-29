@@ -165,7 +165,7 @@ async function fetchOnChainHistory(
       if (r) records.push(r)
     })
   } catch (err) {
-    console.warn('[Fluxo] On-chain history fetch error:', err)
+    // error handled silently
   }
 
   return records

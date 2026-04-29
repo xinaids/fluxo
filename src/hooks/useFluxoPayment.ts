@@ -170,17 +170,7 @@ export function useFluxoPayment() {
             ataSignatures: new Set(ataInitial.map((s) => s.signature)),
             walletSignatures: new Set(walletInitial.map((s) => s.signature)),
           }
-
-          console.log(
-            '[Fluxo] Baseline — ATA:',
-            ata.toBase58().slice(0, 12),
-            'sigs:',
-            baselineRef.current.ataSignatures.size,
-            '| Wallet sigs:',
-            baselineRef.current.walletSignatures.size
-          )
         } catch (e) {
-          console.warn('[Fluxo] initBaseline error:', e)
           baselineRef.current = {
             ata: null,
             ataSignatures: new Set(),
@@ -233,7 +223,6 @@ export function useFluxoPayment() {
               )
               const newAtaTx = ataSigs.find((s) => !ataSignatures.has(s.signature))
               if (newAtaTx) {
-                console.log('[Fluxo] New USDC tx via ATA:', newAtaTx.signature.slice(0, 20))
                 onPaymentFound(newAtaTx.signature)
                 return
               }
@@ -247,11 +236,9 @@ export function useFluxoPayment() {
             )
             const newWalletTx = walletSigs.find((s) => !walletSignatures.has(s.signature))
             if (newWalletTx) {
-              console.log('[Fluxo] New SOL tx via Wallet:', newWalletTx.signature.slice(0, 20))
               onPaymentFound(newWalletTx.signature)
             }
           } catch (e) {
-            console.warn('[Fluxo] polling error:', e)
           }
         }, POLLING_INTERVAL_MS)
       })

@@ -230,7 +230,6 @@ export default function PayPage() {
         source: 'local',
       })
     } catch (e: any) {
-      console.error('[Fluxo] Payment error:', e?.message)
       setError(e?.message || 'Erro ao processar pagamento.')
       setStatus('ready')
     }
