@@ -9,10 +9,7 @@ import { NETWORK } from '@/hooks/constants'
 
 import '@solana/wallet-adapter-react-ui/styles.css'
 
-const ENDPOINT =
-  typeof window !== 'undefined'
-    ? (process.env.NEXT_PUBLIC_RPC_URL ?? '/api/rpc')
-    : (process.env.RPC_URL ?? clusterApiUrl(NETWORK))
+const ENDPOINT = process.env.NEXT_PUBLIC_RPC_URL || clusterApiUrl(NETWORK)
 
 export const SolanaProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const wallets = useMemo(() => [], [])
