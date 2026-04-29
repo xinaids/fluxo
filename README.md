@@ -129,10 +129,11 @@ cd fluxo
 npm install
 
 # 3. Configure
-cat > .env.local << EOF
-NEXT_PUBLIC_RPC_URL=https://devnet.helius-rpc.com/?api-key=YOUR_HELIUS_KEY
+cat > .env.local << ENVEOF
+RPC_URL=https://devnet.helius-rpc.com/?api-key=YOUR_HELIUS_KEY
+NEXT_PUBLIC_RPC_URL=http://localhost:3000/api/rpc
 NEXT_PUBLIC_SOLANA_NETWORK=devnet
-EOF
+ENVEOF
 
 # 4. Run
 npm run dev
