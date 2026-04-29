@@ -81,7 +81,7 @@ export default function PayPage() {
     async function build() {
       const to = params.get('to')
       const amount = params.get('amount')
-      const lbl = params.get('label') || ''
+      const lbl = (params.get('label') || '').slice(0, 100).replace(/<[^>]*>/g, '')
       const currency = params.get('currency') || 'brl'
 
       if (!to) { setError('Endereço não informado.'); setStatus('error'); return }
