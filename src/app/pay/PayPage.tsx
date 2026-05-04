@@ -11,7 +11,7 @@ import { FluxoLogo } from '@/components/ui/FluxoLogo'
 import { useTxHistory } from '@/hooks/useTxHistory'
 import { USDC_MINT, IS_MAINNET, explorerUrl } from '@/hooks/constants'
 
-const RPC = '/api/rpc'
+const RPC = typeof window !== 'undefined' ? window.location.origin + '/api/rpc' : '/api/rpc'
 
 type Status = 'loading' | 'ready' | 'waiting' | 'paying' | 'confirmed' | 'error'
 
@@ -142,7 +142,7 @@ export default function PayPage() {
   function startPolling() {
     if (!referenceRef.current) return
     setStatus('waiting')
-    const conn = new Connection(RPC, 'confirmed')
+    const conn = new Connection(RPC, { commitment: 'confirmed', wsEndpoint: undefined })
     const ref = referenceRef.current
     const deadline = Date.now() + 10 * 60 * 1000
 
@@ -181,7 +181,7 @@ export default function PayPage() {
       setStatus('paying')
       await phantom.connect()
       const payerPubkey = phantom.publicKey as PublicKey
-      const conn = new Connection(RPC, 'confirmed')
+      const conn = new Connection(RPC, { commitment: 'confirmed', wsEndpoint: undefined })
       const reference = referenceRef.current!
       const recipient = recipientRef.current
       const amount = amountUsdcRef.current
@@ -214,7 +214,17 @@ export default function PayPage() {
       tx.add(transferIx)
 
       const { signature } = await phantom.signAndSendTransaction(tx)
-      await conn.confirmTransaction(signature, 'confirmed')
+      // Poll for confirmation instead of WebSocket
+      let confirmed = false
+      for (let i = 0; i < 30; i++) {
+        const status = await conn.getSignatureStatus(signature)
+        if (status?.value?.confirmationStatus === 'confirmed' || status?.value?.confirmationStatus === 'finalized') {
+          confirmed = true
+          break
+        }
+        await new Promise(r => setTimeout(r, 1500))
+      }
+      if (confirmed === false) throw new Error('Transaction confirmation timeout')
 
       onPaymentConfirmed(signature)
       const rate = await fetchUsdcRate()
